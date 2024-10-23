@@ -23,8 +23,12 @@ def compact_1_by_1(x: np.uint32):
 
 
 def encode_morton_2(x: np.int32, z: np.int32):
+    """Encodes the lower 16 bits of two int32 into a uint32"""
     return (part_1_by_1(np.uint32(z)) << 1) + part_1_by_1(np.uint32(x))
 
 
 def decode_morton_2(code: np.uint32):
+    """Decodes a uint32 morton code
+    Returns: x, z as uint32
+    """
     return compact_1_by_1(code >> 0), compact_1_by_1(code >> 1)  # x, z

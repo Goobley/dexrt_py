@@ -4,6 +4,9 @@ from dexrt.sparse_data.morton import decode_morton_2
 
 
 def get_tile(field: np.ndarray, block_size: int, x: int, z: int) -> np.ndarray:
+    """Extract the tile from field with side length block_size and (tile)
+    coordinate given by x and z. This will be a copy of the field data.
+    """
     if field.ndim == 2:
         return field[
             z * block_size : (z + 1) * block_size, x * block_size : (x + 1) * block_size
@@ -17,6 +20,8 @@ def get_tile(field: np.ndarray, block_size: int, x: int, z: int) -> np.ndarray:
 
 
 def set_tile(field: np.ndarray, block_size: int, x: int, z: int, data: np.ndarray):
+    """Set the tile in field with side length block_size and tile coordinate
+    given by x and z to the data contained in data (which will be reshaped)."""
     if field.ndim == 2:
         field[
             z * block_size : (z + 1) * block_size, x * block_size : (x + 1) * block_size
@@ -30,6 +35,23 @@ def set_tile(field: np.ndarray, block_size: int, x: int, z: int, data: np.ndarra
 
 
 def rehydrate_quantity(ds: xr.Dataset, qty: str | np.ndarray) -> np.ndarray:
+    """Rehydrates a sparse quantity (one spatial dimension) from a dataset into
+    a dense quantity (two spatial dimensions). Raises errors if a non-sparse
+    quantity is requested.
+
+    Parameters
+    ----------
+    ds : xarray Dataset
+        The dataset to load from.
+    qty : str | array
+        The name of the quantity (string) in `ds` or an array, where the
+        attributes of `ds` will be used to rehydrate.
+
+    Returns
+    -------
+    rehydrated : array
+        The rehydrated array
+    """
     if "program" not in ds.attrs or ds.program != "dexrt (2d)":
         raise ValueError("Provided dataset not written by dexrt 2d")
     if ds.output_format != "sparse":

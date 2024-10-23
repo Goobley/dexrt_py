@@ -1,6 +1,16 @@
 import xarray as xr
 from dexrt.sparse_data.rehydrate_array import rehydrate_quantity
 
+"""Simple accessor extensions for xarray.
+Enables:
+```
+ds = xr.load_dataset(...)
+full_pops = ds.dexrt.rehydrated["pops"]
+# or
+full_pops = ds.dexrt.rehydrated.pops
+```
+"""
+
 
 class SparseAccessor:
     def __init__(self, ds: xr.Dataset):
