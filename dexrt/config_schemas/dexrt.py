@@ -1,13 +1,18 @@
 from typing import Dict, Literal, Union, List
 from pydantic import BaseModel, Field
 
+
 class AtomicModelConfig(BaseModel):
     path: str
-    treatment: Union[Literal["Detailed"], Literal["Golding"], Literal["Active"]] = "Active"
+    treatment: Union[Literal["Detailed"], Literal["Golding"], Literal["Active"]] = (
+        "Active"
+    )
+
 
 class DexrtSystemConfig(BaseModel):
     mem_pool_initial_gb: float = 2.0
     mem_pool_grow_gb: float = 1.4
+
 
 class DexrtOutputConfig(BaseModel):
     sparse: bool = False
@@ -21,11 +26,15 @@ class DexrtOutputConfig(BaseModel):
     alo: bool = False
     cascades: List[int] = Field(default_factory=list)
 
+
 class DexrtMipConfig(BaseModel):
-    mip_levels: Union[int, List[int]] = Field(default_factory=lambda: [0, 0, 1, 2, 3, 3])
+    mip_levels: Union[int, List[int]] = Field(
+        default_factory=lambda: [0, 0, 1, 2, 3, 3]
+    )
     opacity_threshold: float = 0.25
     log_chi_mip_variance: float = 1.0
     log_eta_mip_variance: float = 1.0
+
 
 class DexrtConfig(BaseModel):
     system: DexrtSystemConfig = Field(default_factory=DexrtSystemConfig)
@@ -37,6 +46,7 @@ class DexrtConfig(BaseModel):
     max_cascade: int = 5
     mip_config: DexrtMipConfig
 
+
 class DexrtLteConfig(DexrtConfig):
     mode: Literal["Lte"] = "Lte"
     sparse_calculation: bool = False
@@ -44,6 +54,7 @@ class DexrtLteConfig(DexrtConfig):
     atoms: Dict[str, AtomicModelConfig]
     boundary_type: Union[Literal["Zero"], Literal["Promweaver"]]
     initial_pops_path: str = ""
+
 
 class DexrtNonLteConfig(DexrtLteConfig):
     mode: Literal["NonLte"] = "NonLte"
@@ -54,6 +65,7 @@ class DexrtNonLteConfig(DexrtLteConfig):
     snapshot_frequency: int = 0
     initial_lambda_iterations: int = 2
     final_dense_fs: bool = True
+
 
 class DexrtGivenFsConfig(DexrtConfig):
     mode: Literal["GivenFs"] = "GivenFs"
