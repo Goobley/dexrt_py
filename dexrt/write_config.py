@@ -1,4 +1,3 @@
-from dexrt_py.dexrt.config_schemas.dexrt import DexrtNonLteConfig, DexrtLteConfig, DexrtGivenFsConfig
 import yaml
 
 def write_config(conf, path="dexrt.yaml"):

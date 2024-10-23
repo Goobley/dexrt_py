@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64.0", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dexrt"
+dynamic = ["version"]
+dependencies = [
+    "promweaver",
+    "numpy >= 1.26",
+    "xarray >= 2024.5.0",
+    "netcdf4",
+    "crtaf@git+https://github.com/Goobley/crtaf-py.git",
+]
+requires-python = ">=3.10"
+description = "Python utilities for setting up and running dexrt radiative transfer code"
+readme = "README.md"
+authors = [
+    {name = "Chris Osborne", email = "lw@contextuallight.com"},
+]
+license = {text = "Apache-2.0 License"}
+
+[tools.setuptools_scm]
+version_file = "dexrt/version.py"
