@@ -8,6 +8,7 @@ dynamic = ["version"]
 dependencies = [
     "promweaver",
     "numpy >= 1.26",
+    "scipy",
     "xarray >= 2024.5.0",
     "netcdf4",
     "crtaf@git+https://github.com/Goobley/crtaf-py.git",

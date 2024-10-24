@@ -22,7 +22,7 @@ class DexrtOutputConfig(BaseModel):
     lte_pops: bool = True
     ne: bool = True
     nh_tot: bool = True
-    max_mip_level = True
+    max_mip_level: bool = True
     alo: bool = False
     cascades: List[int] = Field(default_factory=list)
 

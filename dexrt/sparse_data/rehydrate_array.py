@@ -80,4 +80,4 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | np.ndarray) -> np.ndarray:
             :, flat_tile_idx * block_entries : (flat_tile_idx + 1) * block_entries
         ]
         set_tile(result, block_size, x, z, flat_tile)
-    return result
+    return result.squeeze()
