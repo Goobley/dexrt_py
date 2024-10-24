@@ -44,7 +44,7 @@ class DexrtConfig(BaseModel):
     store_J_on_cpu: bool = True
     output: DexrtOutputConfig = Field(default_factory=DexrtOutputConfig)
     max_cascade: int = 5
-    mip_config: DexrtMipConfig
+    mip_config: DexrtMipConfig = Field(default_factory=DexrtMipConfig)
 
 
 class DexrtLteConfig(DexrtConfig):
