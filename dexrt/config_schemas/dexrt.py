@@ -56,6 +56,11 @@ class DexrtLteConfig(DexrtConfig):
     initial_pops_path: str = ""
 
 
+class DexrtNgConfig(BaseModel):
+    enable: bool = True
+    threshold: float = 5e-2
+
+
 class DexrtNonLteConfig(DexrtLteConfig):
     mode: Literal["NonLte"] = "NonLte"
     max_iter: int = 200
@@ -65,6 +70,7 @@ class DexrtNonLteConfig(DexrtLteConfig):
     snapshot_frequency: int = 0
     initial_lambda_iterations: int = 2
     final_dense_fs: bool = True
+    ng_config: DexrtNgConfig = Field(default_factory=DexrtNgConfig)
 
 
 class DexrtGivenFsConfig(DexrtConfig):
