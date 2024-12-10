@@ -59,6 +59,7 @@ class DexrtLteConfig(DexrtConfig):
 class DexrtNgConfig(BaseModel):
     enable: bool = True
     threshold: float = 5e-2
+    lower_threshold: float = 2e-4
 
 
 class DexrtNonLteConfig(DexrtLteConfig):
