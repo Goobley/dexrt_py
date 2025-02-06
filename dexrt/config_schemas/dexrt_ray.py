@@ -3,8 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class DexrtRaySystemConfig(BaseModel):
-    mem_pool_initial_gb: float = 2.0
-    mem_pool_grow_gb: float = 1.4
+    mem_pool_gb: float = 2.0
 
 
 class DexrtRayConfig(BaseModel):
