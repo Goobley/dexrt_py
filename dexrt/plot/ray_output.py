@@ -415,8 +415,6 @@ def plot_slit_view_ray(
         head_width=head_width,
         color=view_ray_color,
     )
-    print(min_x * voxel_scale, max_x * voxel_scale)
-    print(min_z * voxel_scale, max_z * voxel_scale)
 
     if label_axes:
         ax.set_xlabel("x [Mm]")
