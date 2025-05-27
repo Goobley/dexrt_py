@@ -7,6 +7,9 @@ class AtomicModelConfig(BaseModel):
     treatment: Union[Literal["Detailed"], Literal["Golding"], Literal["Active"]] = (
         "Active"
     )
+    initial_populations: Union[Literal["Lte"], Literal["ZeroRadiation"]] = (
+        "Lte"
+    )
 
 
 class DexrtSystemConfig(BaseModel):

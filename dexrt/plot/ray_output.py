@@ -349,10 +349,10 @@ def plot_slit_view_ray(
     min_x, max_x, min_z, max_z = np.inf, -np.inf, np.inf, -np.inf
     for m in range(ray_data.mu.shape[0]):
         starts = ray_data[f"ray_start_{m}"]
-        min_x = min(starts[:, 0].min(), min_x)
-        max_x = max(starts[:, 0].max(), max_x)
-        min_z = min(starts[:, 1].min(), min_z)
-        max_z = max(starts[:, 1].max(), max_z)
+        min_x = min(starts[:, 0].values.min(), min_x)
+        max_x = max(starts[:, 0].values.max(), max_x)
+        min_z = min(starts[:, 1].values.min(), min_z)
+        max_z = max(starts[:, 1].values.max(), max_z)
 
     if param in synth_data:
         field_data = synth_data[param]
@@ -368,6 +368,12 @@ def plot_slit_view_ray(
     voxel_scale = atmos_data.voxel_scale.values / 1e6
     offset_x = atmos_data.offset_x.values / 1e6
     offset_z = atmos_data.offset_z.values / 1e6
+
+    # NOTE(cmo): Expand min/max range to full encompass field
+    min_x = min(0.0, min_x)
+    max_x = max(field.shape[1], max_x)
+    min_z = min(0.0, min_z)
+    max_z = max(field.shape[0], max_z)
 
     mappable = ax.imshow(
         field,
@@ -409,6 +415,8 @@ def plot_slit_view_ray(
         head_width=head_width,
         color=view_ray_color,
     )
+    print(min_x * voxel_scale, max_x * voxel_scale)
+    print(min_z * voxel_scale, max_z * voxel_scale)
 
     if label_axes:
         ax.set_xlabel("x [Mm]")
