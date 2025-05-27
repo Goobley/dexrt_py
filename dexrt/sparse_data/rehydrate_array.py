@@ -70,7 +70,7 @@ def set_tile_3d(field: np.ndarray, block_size: int, x: int, y: int, z: int, data
         ] = data.reshape(-1, block_size, block_size, block_size)
 
 
-def rehydrate_quantity(ds: xr.Dataset, qty: str | np.ndarray) -> np.ndarray:
+def rehydrate_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> np.ndarray:
     """Rehydrates a sparse quantity (one spatial dimension) from a dataset into
     a dense quantity (two spatial dimensions). Raises errors if a non-sparse
     quantity is requested.
@@ -97,10 +97,14 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | np.ndarray) -> np.ndarray:
     block_entries = block_size * block_size
     if isinstance(qty, str):
         qty = ds[qty].values
+    if isinstance(qty, xr.DataArray):
+        qty = qty.values
 
     leading_dim = 1
     if qty.ndim > 1:
         leading_dim = qty.shape[0]
+    else:
+        qty = qty.reshape(1, -1)
 
     result_shape = (
         leading_dim,
@@ -118,7 +122,7 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | np.ndarray) -> np.ndarray:
         set_tile(result, block_size, x, z, flat_tile)
     return result.squeeze()
 
-def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | np.ndarray, size: Tuple[int], plane: int | None = None) -> np.ndarray:
+def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> np.ndarray:
     """Rehydrates a sparse quantity (one spatial dimension) from a dataset into
     a dense quantity (three spatial dimensions). Raises errors if a non-sparse
     quantity is requested.
@@ -130,8 +134,6 @@ def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | np.ndarray, size: Tuple[int
     qty : str | array
         The name of the quantity (string) in `ds` or an array, where the
         attributes of `ds` will be used to rehydrate.
-    size : Tuple[int]
-        The spatial dimensions of the array
     plane : int | None
         If the sparse array is 2d, the plane to use.
 
@@ -140,39 +142,37 @@ def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | np.ndarray, size: Tuple[int
     rehydrated : array
         The rehydrated array
     """
-    # if "program" not in ds.attrs or ds.program != "dexrt (2d)":
-    #     raise ValueError("Provided dataset not written by dexrt 2d")
-    # if ds.output_format != "sparse":
-    #     raise ValueError("Data is not sparse and does not need to be rehydrated")
+    if "program" not in ds.attrs or ds.program != "dexrt (3d)":
+        raise ValueError("Provided dataset not written by dexrt 3d")
+    if ds.output_format != "sparse":
+        raise ValueError("Data is not sparse and does not need to be rehydrated")
 
-    block_size = 8
+    block_size = ds.block_size
     block_entries = block_size**3
     if isinstance(qty, str):
         qty = ds[qty].values
+    if isinstance(qty, xr.DataArray):
+        qty = qty.values
 
     leading_dim = 1
-    if qty.ndim > 1 and plane is None:
+    if qty.ndim > 1:
         leading_dim = qty.shape[0]
+    else:
+        qty = qty.reshape(1, -1)
 
     result_shape = (
         leading_dim,
-        size[2],
-        size[1],
-        size[0]
+        ds.num_z_blocks * block_size,
+        ds.num_y_blocks * block_size,
+        ds.num_x_blocks * block_size,
     )
     result = np.empty(result_shape, dtype=qty.dtype)
 
     morton_tiles = ds.morton_tiles.values
     for flat_tile_idx, morton_code in enumerate(morton_tiles):
         x, y, z = decode_morton_3(morton_code)
-        if plane is None:
-            flat_tile = qty[
-                :, flat_tile_idx * block_entries : (flat_tile_idx + 1) * block_entries
-            ]
-        else:
-            flat_tile = qty[
-                plane, flat_tile_idx * block_entries : (flat_tile_idx + 1) * block_entries
-            ]
-
+        flat_tile = qty[
+            :, flat_tile_idx * block_entries : (flat_tile_idx + 1) * block_entries
+        ]
         set_tile_3d(result, block_size, x, y, z, flat_tile)
     return result.squeeze()

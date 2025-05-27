@@ -2,7 +2,7 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import xarray as xr
 import yaml
-from dexrt.sparse_data.rehydrate_array import rehydrate_quantity
+from dexrt.sparse_data.rehydrate_array import rehydrate_quantity, rehydrate_quantity_3d
 import numpy as np
 import os.path as path
 
@@ -29,8 +29,10 @@ ds.dexrt.plot_ray(lambda0=854, theta=48) # theta in degres or muz as muz=1
 
 
 class SparseAccessor:
-    def __init__(self, ds: xr.Dataset):
+    def __init__(self, ds: xr.Dataset, dimensionality: int=2):
         self.ds = ds
+        self.dimensionality = dimensionality
+        self.rehydrate = rehydrate_quantity if dimensionality == 2 else rehydrate_quantity_3d
 
     def __getattr__(self, attr: str) -> np.ndarray:
         return self[attr]
@@ -39,20 +41,19 @@ class SparseAccessor:
         if name not in self.ds:
             raise ValueError(f"Quantity {name} not present in dataset.")
 
-        return rehydrate_quantity(self.ds, name)
+        return self.rehydrate(self.ds, name)
 
     def plane(self, name: str, entries: int | slice) -> np.ndarray:
         if name not in self.ds:
             raise ValueError(f"Quantity {name} not present in dataset.")
 
-        return rehydrate_quantity(self.ds, self.ds[name][entries])
+        return self.rehydrate(self.ds, self.ds[name][entries])
 
 
 @xr.register_dataset_accessor("dexrt")
 class DexrtAccessor:
     def __init__(self, xarray_obj: xr.Dataset):
         self.ds = xarray_obj
-        self.rehydrated = SparseAccessor(self.ds)
         self._config = None
         self.config_prefix = None
 
@@ -64,13 +65,21 @@ class DexrtAccessor:
         self._atmos = None
         self._fig = None
 
+        # NOTE(cmo): dexrt (3d) has always had a conformant program field
+        dimensionality = 2
         if "program" in self.ds.attrs:
-            if self.ds.program == "dexrt (2d)":
+            if self.ds.program.startswith("dexrt ("):
                 self._dex = self.ds
                 self._attempt_load_atmos_data()
-            elif self.ds.program == "dexrt_ray (2d)":
+            elif self.ds.program.startswith("dexrt_ray ("):
                 self._ray = self.ds
                 self._attempt_load_synth_and_atmos_data()
+
+            program_split = self.ds.program.split('(')
+            if len(program_split) == 2:
+                dimensionality = int(program_split[1][0])
+
+        self.rehydrated = SparseAccessor(self.ds, dimensionality)
 
     @property
     def ray(self):
@@ -166,7 +175,7 @@ class DexrtAccessor:
         """
         if self.ds.program != "dexrt_ray (2d)":
             raise ValueError(
-                "Calling plot ray on data that is not output from dexrt_ray"
+                "Calling plot_ray on data that is not output from dexrt_ray (2d)"
             )
 
         need_config = self._config is None or self.config_prefix is None
