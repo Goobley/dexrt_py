@@ -111,7 +111,7 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> 
         ds.num_z_blocks * block_size,
         ds.num_x_blocks * block_size,
     )
-    result = np.empty(result_shape, dtype=qty.dtype)
+    result = np.zeros(result_shape, dtype=qty.dtype)
 
     morton_tiles = ds.morton_tiles.values
     for flat_tile_idx, morton_code in enumerate(morton_tiles):
@@ -166,7 +166,7 @@ def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) 
         ds.num_y_blocks * block_size,
         ds.num_x_blocks * block_size,
     )
-    result = np.empty(result_shape, dtype=qty.dtype)
+    result = np.zeros(result_shape, dtype=qty.dtype)
 
     morton_tiles = ds.morton_tiles.values
     for flat_tile_idx, morton_code in enumerate(morton_tiles):
