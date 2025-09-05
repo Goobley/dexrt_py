@@ -20,12 +20,13 @@ class DexrtOutputConfig(BaseModel):
     sparse: bool = False
     wavelength: bool = True
     J: bool = True
+    rad_loss: bool = True
     pops: bool = True
     lte_pops: bool = True
     ne: bool = True
     nh_tot: bool = True
     max_mip_level: bool = True
-    alo: bool = False
+    psi_star: bool = False
     cascades: List[int] = Field(default_factory=list)
 
 
@@ -56,6 +57,7 @@ class DexrtLteConfig(DexrtConfig):
     atoms: Dict[str, AtomicModelConfig]
     boundary_type: Union[Literal["Zero"], Literal["Promweaver"]]
     initial_pops_path: str = ""
+    rad_loss: str  = Union[Literal["None"], Literal["PerWavelength"], Literal["Integrated"]]
 
 
 class DexrtNgConfig(BaseModel):
@@ -70,7 +72,7 @@ class DexrtNonLteConfig(DexrtLteConfig):
     pop_tol: float = 1e-3
     conserve_charge: bool = False
     conserve_pressure: bool = False
-    snapshot_frequency: int = 0
+    snapshot_frequency: int = 10
     initial_lambda_iterations: int = 2
     final_dense_fs: bool = True
     ng_config: DexrtNgConfig = Field(default_factory=DexrtNgConfig)
