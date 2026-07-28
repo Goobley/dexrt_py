@@ -28,6 +28,9 @@ class DexrtOutputConfig(BaseModel):
     max_mip_level: bool = True
     psi_star: bool = False
     cascades: List[int] = Field(default_factory=list)
+    radiative_rates: bool = False
+    collisional_rates: bool = False
+    cont_energy_balance: bool = False
 
 
 class DexrtMipConfig(BaseModel):
@@ -52,12 +55,12 @@ class DexrtConfig(BaseModel):
 
 class DexrtLteConfig(DexrtConfig):
     mode: Literal["Lte"] = "Lte"
-    sparse_calculation: bool = False
+    sparse_calculation: bool = True
     threshold_temperature: float = 250e3
     atoms: Dict[str, AtomicModelConfig]
     boundary_type: Union[Literal["Zero"], Literal["Promweaver"]]
     initial_pops_path: str = ""
-    rad_loss: str  = Union[Literal["None"], Literal["PerWavelength"], Literal["Integrated"]]
+    rad_loss: Union[Literal["None"], Literal["PerWavelength"], Literal["Integrated"]] = "None"
 
 
 class DexrtNgConfig(BaseModel):
