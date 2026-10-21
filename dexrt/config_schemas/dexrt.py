@@ -1,4 +1,4 @@
-from typing import Dict, Literal, Union, List
+from typing import Dict, Literal, Union, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -39,6 +39,17 @@ class DexrtMipConfig(BaseModel):
     log_eta_mip_variance: float = 1.0
 
 
+class DexrtScConfig(BaseModel):
+    """Options for the short characteristics solver (dexrt_sc); ignored by the
+    radiance cascade executables."""
+    quadrature: Union[Literal["Stepan"], Literal["StepanMirrored"], Literal["Healpix"]] = "Stepan"
+    # None: 7 for the Stepan quadratures, 1 for Healpix (nside = 2**order)
+    quadrature_order: Optional[int] = None
+    formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"]] = "PiecewiseLinear"
+    interpolation: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "MonotonizedCentral"
+    x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
+
+
 class DexrtConfig(BaseModel):
     system: DexrtSystemConfig = Field(default_factory=DexrtSystemConfig)
     atmos_path: str = "dexrt_atmos.nc"
@@ -48,6 +59,7 @@ class DexrtConfig(BaseModel):
     output: DexrtOutputConfig = Field(default_factory=DexrtOutputConfig)
     max_cascade: int = 5
     mip_config: DexrtMipConfig = Field(default_factory=DexrtMipConfig)
+    sc: DexrtScConfig = Field(default_factory=DexrtScConfig)
 
 
 class DexrtLteConfig(DexrtConfig):
