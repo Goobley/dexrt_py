@@ -50,6 +50,7 @@ class DexrtScConfig(BaseModel):
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
     # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
     refine_wavelength_grid: bool = False
+    iteration: Union[Literal["Jacobi"], Literal["GaussSeidel"]] = "Jacobi"
 
 
 class DexrtConfig(BaseModel):
@@ -68,6 +69,8 @@ class DexrtLteConfig(DexrtConfig):
     mode: Literal["Lte"] = "Lte"
     sparse_calculation: bool = False
     threshold_temperature: float = 250e3
+    # Background opacity tables from dexrt.background_tables (empty for none).
+    background_path: str = ""
     atoms: Dict[str, AtomicModelConfig]
     boundary_type: Union[Literal["Zero"], Literal["Promweaver"]]
     initial_pops_path: str = ""
