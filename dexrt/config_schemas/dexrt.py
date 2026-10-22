@@ -48,10 +48,6 @@ class DexrtScConfig(BaseModel):
     formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"]] = "PiecewiseLinear"
     interpolation: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "MonotonizedCentral"
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
-    # Rest: emissivity/opacity in the rest frame, remapped to the lab frame per
-    # direction, Gamma built from the back-mapped rest frame J and psi*.
-    frame: Union[Literal["Lab"], Literal["Rest"], Literal["Hybrid"]] = "Lab"
-    spectral_remap: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "Linear"
     # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
     refine_wavelength_grid: bool = False
 
