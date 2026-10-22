@@ -50,7 +50,6 @@ class DexrtScConfig(BaseModel):
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
     # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
     refine_wavelength_grid: bool = False
-    iteration: Union[Literal["Jacobi"], Literal["GaussSeidel"]] = "Jacobi"
 
 
 class DexrtConfig(BaseModel):
