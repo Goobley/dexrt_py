@@ -52,6 +52,8 @@ class DexrtScConfig(BaseModel):
     # direction, Gamma built from the back-mapped rest frame J and psi*.
     frame: Union[Literal["Lab"], Literal["Rest"], Literal["Hybrid"]] = "Lab"
     spectral_remap: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "Linear"
+    # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
+    refine_wavelength_grid: bool = False
 
 
 class DexrtConfig(BaseModel):
