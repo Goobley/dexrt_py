@@ -51,6 +51,11 @@ class DexrtScConfig(BaseModel):
     # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
     refine_wavelength_grid: bool = False
     characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "Short"
+    # Promweaver boundary: average each direction's incident intensity over its
+    # equal-area cone with boundary_cone_mu Gauss-Legendre nodes x
+    # boundary_cone_phi azimuths (0: off).
+    boundary_cone_mu: int = 4
+    boundary_cone_phi: int = 8
 
 
 class DexrtConfig(BaseModel):
