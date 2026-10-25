@@ -88,7 +88,7 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> 
     rehydrated : array
         The rehydrated array
     """
-    if ds.attrs.get("sparse_layout") == "block_major" or "sc_layout_version" in ds.attrs:
+    if "sparse_layout" in ds.attrs:
         if ds.attrs.get("output_format") != "sparse":
             raise ValueError("Data is not sparse and does not need to be rehydrated")
         return rehydrate_sc_quantity(ds, qty)
@@ -182,61 +182,22 @@ def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) 
     return result.squeeze()
 
 
-def _sc_block_indices(ds: xr.Dataset) -> np.ndarray:
-    """Global flat cell indices in the versioned SC compact storage order."""
-    if ds.attrs.get("sc_layout_version") != 1:
-        raise ValueError("Unsupported SC layout version")
-    if ds.attrs.get("sparse_layout") != "block_major":
+def _sc_indices(ds: xr.Dataset) -> np.ndarray:
+    """Global flat cell indices of the SC compact storage (row-major active cells)."""
+    if ds.attrs.get("sparse_layout") != "row_major":
         raise ValueError("Unsupported SC sparse layout")
     mask = np.asarray(ds["active"].values)
     if mask.ndim != 2 or not np.isin(mask, [0, 1]).all():
         raise ValueError("SC activity must be a binary [z, x] mask")
-    nz, nx = mask.shape
-    origin = np.asarray(ds["block_origin"].values)
-    shape = np.asarray(ds["block_shape"].values)
-    offset = np.asarray(ds["block_offset"].values)
-    count = np.asarray(ds["block_count"].values)
-    if (
-        origin.ndim != 2
-        or origin.shape[1] != 2
-        or shape.shape != origin.shape
-        or offset.shape != (len(origin),)
-        or count.shape != offset.shape
-    ):
-        raise ValueError("Invalid SC block table dimensions")
-    if any(not np.issubdtype(a.dtype, np.integer) for a in (origin, shape, offset, count)):
-        raise ValueError("SC block table must contain integer indices")
-    owned = np.zeros(mask.shape, dtype=bool)
-    indices = []
-    total = 0
-    for (x0, z0), (width, height), start, size in zip(origin, shape, offset, count):
-        x0, z0, width, height, start, size = map(int, (x0, z0, width, height, start, size))
-        if (
-            min(x0, z0) < 0
-            or min(width, height) < 1
-            or x0 + width > nx
-            or z0 + height > nz
-            or start != total
-            or size < 0
-        ):
-            raise ValueError("Invalid SC block extent or compact offset")
-        region = np.s_[z0 : z0 + height, x0 : x0 + width]
-        if owned[region].any():
-            raise ValueError("Overlapping SC blocks")
-        owned[region] = True
-        zz, xx = np.nonzero(mask[region])
-        if len(zz) != size:
-            raise ValueError("SC block count does not match activity")
-        indices.append((zz + z0) * nx + xx + x0)
-        total += size
-    if not owned.all() or total != ds.sizes.get("ks"):
-        raise ValueError("SC block table does not cover the grid/compact arrays")
-    return np.concatenate(indices) if indices else np.empty(0, dtype=np.int64)
+    indices = np.flatnonzero(mask)
+    if len(indices) != ds.sizes.get("ks", 0):
+        raise ValueError("SC activity does not match the compact arrays")
+    return indices
 
 
 def rehydrate_sc_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> np.ndarray:
-    """Rehydrate version-1 block-major SC output, including zero-active blocks."""
-    indices = _sc_block_indices(ds)
+    """Rehydrate row-major SC compact output."""
+    indices = _sc_indices(ds)
     if isinstance(qty, str):
         qty = ds[qty]
     if isinstance(qty, xr.DataArray):
@@ -245,7 +206,7 @@ def rehydrate_sc_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) 
         qty = qty.values
     qty = np.asarray(qty)
     if qty.ndim < 1 or qty.shape[-1] != len(indices):
-        raise ValueError("SC quantity's compact dimension does not match the block table")
+        raise ValueError("SC quantity's compact dimension does not match the activity")
     shape = ds["active"].shape
     result = np.zeros(qty.shape[:-1] + (int(np.prod(shape)),), dtype=qty.dtype)
     result[..., indices] = qty
@@ -260,7 +221,7 @@ def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
     """
     from dexrt.sparse_data.morton import encode_morton_2
 
-    indices = _sc_block_indices(ds)
+    indices = _sc_indices(ds)
     mask = np.asarray(ds["active"].values, dtype=bool)
     nz, nx = mask.shape
     if (
@@ -287,13 +248,7 @@ def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
     for _, x, z in tiles:
         for dz in range(block_size):
             order.extend(inverse[(z + dz) * nx + x : (z + dz) * nx + x + block_size])
-    out = ds.drop_vars(
-        [
-            name
-            for name in ("block_origin", "block_shape", "block_offset", "block_count")
-            if name in ds
-        ]
-    ).copy(deep=True)
+    out = ds.copy(deep=True)
     order = np.asarray(order, dtype=np.int64)
     for name, var in ds.data_vars.items():
         if var.dims and var.dims[-1] == "ks":
@@ -302,7 +257,6 @@ def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
         "num_active_tiles",
         np.asarray([code for code, _, _ in tiles], dtype=np.uint32),
     )
-    out.attrs.pop("sc_layout_version", None)
     out.attrs.pop("sparse_layout", None)
     out.attrs.update(
         program="dexrt (2d)",

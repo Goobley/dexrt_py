@@ -48,8 +48,6 @@ class DexrtScConfig(BaseModel):
     formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"]] = "PiecewiseLinear"
     interpolation: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "MonotonizedCentral"
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
-    # Refine the wavelength grid for the atmosphere's maximum Doppler shift.
-    refine_wavelength_grid: bool = False
     characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "Short"
     # Promweaver boundary: average each direction's incident intensity over its
     # equal-area cone with boundary_cone_mu Gauss-Legendre nodes x
