@@ -45,7 +45,7 @@ class DexrtScConfig(BaseModel):
     quadrature: Union[Literal["Stepan"], Literal["StepanMirrored"], Literal["Healpix"]] = "Stepan"
     # None: 7 for the Stepan quadratures, 1 for Healpix (nside = 2**order)
     quadrature_order: Optional[int] = None
-    formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"]] = "PiecewiseLinear"
+    formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"], Literal["PiecewiseLinearEmissivity"]] = "PiecewiseLinearEmissivity"
     interpolation: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "MonotonizedCentral"
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
     characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "Short"
@@ -54,6 +54,13 @@ class DexrtScConfig(BaseModel):
     # boundary_cone_phi azimuths (0: off).
     boundary_cone_mu: int = 4
     boundary_cone_phi: int = 8
+    # PRD-Voigt lines: Hybrid (comoving-frame angle-averaged redistribution,
+    # impact-limit coherence) or Off (CRD). Sub-iterations per iteration, their
+    # tolerance on the relative change of rho, and the first iteration with PRD.
+    prd: Union[Literal["Off"], Literal["Hybrid"]] = "Off"
+    prd_subiterations: int = 3
+    prd_tolerance: float = 1e-3
+    prd_start_iter: int = 0
 
 
 class DexrtConfig(BaseModel):
