@@ -27,6 +27,9 @@ class DexrtOutputConfig(BaseModel):
     nh_tot: bool = True
     max_mip_level: bool = True
     psi_star: bool = False
+    # dexrt_sc_3d: write the emergent intensity [wavelength, dir, y, x]
+    # (always written by the 2D SC solver).
+    sc_emergent: bool = False
     cascades: List[int] = Field(default_factory=list)
 
 
@@ -48,6 +51,8 @@ class DexrtScConfig(BaseModel):
     formal_solver: Union[Literal["PiecewiseConstant"], Literal["PiecewiseLinear"], Literal["PiecewiseLinearEmissivity"]] = "PiecewiseLinearEmissivity"
     interpolation: Union[Literal["Linear"], Literal["VanLeer"], Literal["MonotonizedCentral"]] = "MonotonizedCentral"
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
+    # dexrt_sc_3d only.
+    y_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
     characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "Short"
     # Promweaver boundary: average each direction's incident intensity over its
     # equal-area cone with boundary_cone_mu Gauss-Legendre nodes x
