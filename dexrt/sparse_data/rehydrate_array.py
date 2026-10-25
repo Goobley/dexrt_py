@@ -196,7 +196,13 @@ def _sc_block_indices(ds: xr.Dataset) -> np.ndarray:
     shape = np.asarray(ds["block_shape"].values)
     offset = np.asarray(ds["block_offset"].values)
     count = np.asarray(ds["block_count"].values)
-    if origin.ndim != 2 or origin.shape[1] != 2 or shape.shape != origin.shape or offset.shape != (len(origin),) or count.shape != offset.shape:
+    if (
+        origin.ndim != 2
+        or origin.shape[1] != 2
+        or shape.shape != origin.shape
+        or offset.shape != (len(origin),)
+        or count.shape != offset.shape
+    ):
         raise ValueError("Invalid SC block table dimensions")
     if any(not np.issubdtype(a.dtype, np.integer) for a in (origin, shape, offset, count)):
         raise ValueError("SC block table must contain integer indices")
@@ -205,9 +211,16 @@ def _sc_block_indices(ds: xr.Dataset) -> np.ndarray:
     total = 0
     for (x0, z0), (width, height), start, size in zip(origin, shape, offset, count):
         x0, z0, width, height, start, size = map(int, (x0, z0, width, height, start, size))
-        if min(x0, z0) < 0 or min(width, height) < 1 or x0 + width > nx or z0 + height > nz or start != total or size < 0:
+        if (
+            min(x0, z0) < 0
+            or min(width, height) < 1
+            or x0 + width > nx
+            or z0 + height > nz
+            or start != total
+            or size < 0
+        ):
             raise ValueError("Invalid SC block extent or compact offset")
-        region = np.s_[z0:z0 + height, x0:x0 + width]
+        region = np.s_[z0 : z0 + height, x0 : x0 + width]
         if owned[region].any():
             raise ValueError("Overlapping SC blocks")
         owned[region] = True
@@ -246,17 +259,23 @@ def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
     owns its reordered arrays; the input is not changed.
     """
     from dexrt.sparse_data.morton import encode_morton_2
+
     indices = _sc_block_indices(ds)
     mask = np.asarray(ds["active"].values, dtype=bool)
     nz, nx = mask.shape
-    if not isinstance(block_size, (int, np.integer)) or block_size < 1 or nx % block_size or nz % block_size:
+    if (
+        not isinstance(block_size, (int, np.integer))
+        or block_size < 1
+        or nx % block_size
+        or nz % block_size
+    ):
         raise ValueError("Morton conversion requires complete outer tiles")
     if max(nx // block_size, nz // block_size) > 65536:
         raise ValueError("Tile coordinates exceed the legacy Morton encoding")
     tiles = []
     for z in range(0, nz, block_size):
         for x in range(0, nx, block_size):
-            tile = mask[z:z + block_size, x:x + block_size]
+            tile = mask[z : z + block_size, x : x + block_size]
             if tile.any() != tile.all():
                 raise ValueError("Morton conversion requires tile-equivalent activity")
             if tile.all():
@@ -267,15 +286,29 @@ def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
     order = []
     for _, x, z in tiles:
         for dz in range(block_size):
-            order.extend(inverse[(z + dz) * nx + x:(z + dz) * nx + x + block_size])
-    out = ds.drop_vars([name for name in ("block_origin", "block_shape", "block_offset", "block_count") if name in ds]).copy(deep=True)
+            order.extend(inverse[(z + dz) * nx + x : (z + dz) * nx + x + block_size])
+    out = ds.drop_vars(
+        [
+            name
+            for name in ("block_origin", "block_shape", "block_offset", "block_count")
+            if name in ds
+        ]
+    ).copy(deep=True)
     order = np.asarray(order, dtype=np.int64)
     for name, var in ds.data_vars.items():
         if var.dims and var.dims[-1] == "ks":
             out[name] = (var.dims, np.asarray(var.values)[..., order], var.attrs)
-    out["morton_tiles"] = ("num_active_tiles", np.asarray([code for code, _, _ in tiles], dtype=np.uint32))
+    out["morton_tiles"] = (
+        "num_active_tiles",
+        np.asarray([code for code, _, _ in tiles], dtype=np.uint32),
+    )
     out.attrs.pop("sc_layout_version", None)
     out.attrs.pop("sparse_layout", None)
-    out.attrs.update(program="dexrt (2d)", output_format="sparse", block_size=block_size,
-                     num_x_blocks=nx // block_size, num_z_blocks=nz // block_size)
+    out.attrs.update(
+        program="dexrt (2d)",
+        output_format="sparse",
+        block_size=block_size,
+        num_x_blocks=nx // block_size,
+        num_z_blocks=nz // block_size,
+    )
     return out
