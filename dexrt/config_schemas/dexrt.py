@@ -53,7 +53,7 @@ class DexrtScConfig(BaseModel):
     x_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
     # dexrt_sc_3d only.
     y_boundary: Union[Literal["Fixed"], Literal["Periodic"]] = "Fixed"
-    characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "Short"
+    characteristics: Union[Literal["Short"], Literal["LongerCharacteristics"]] = "LongerCharacteristics"
     # Promweaver boundary: average each direction's incident intensity over its
     # equal-area cone with boundary_cone_mu Gauss-Legendre nodes x
     # boundary_cone_phi azimuths (0: off).
