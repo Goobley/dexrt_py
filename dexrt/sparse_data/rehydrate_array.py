@@ -88,11 +88,7 @@ def rehydrate_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> 
     rehydrated : array
         The rehydrated array
     """
-    if "sparse_layout" in ds.attrs:
-        if ds.attrs.get("output_format") != "sparse":
-            raise ValueError("Data is not sparse and does not need to be rehydrated")
-        return rehydrate_sc_quantity(ds, qty)
-    if ds.attrs.get("program") not in ("dexrt (2d)", "dexrt_sc (2d)"):
+    if "program" not in ds.attrs or ds.program != "dexrt (2d)":
         raise ValueError("Provided dataset not written by dexrt 2d")
     if ds.output_format != "sparse":
         raise ValueError("Data is not sparse and does not need to be rehydrated")
@@ -180,89 +176,3 @@ def rehydrate_quantity_3d(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) 
         ]
         set_tile_3d(result, block_size, x, y, z, flat_tile)
     return result.squeeze()
-
-
-def _sc_indices(ds: xr.Dataset) -> np.ndarray:
-    """Global flat cell indices of the SC compact storage (row-major active cells)."""
-    if ds.attrs.get("sparse_layout") != "row_major":
-        raise ValueError("Unsupported SC sparse layout")
-    mask = np.asarray(ds["active"].values)
-    if mask.ndim != 2 or not np.isin(mask, [0, 1]).all():
-        raise ValueError("SC activity must be a binary [z, x] mask")
-    indices = np.flatnonzero(mask)
-    if len(indices) != ds.sizes.get("ks", 0):
-        raise ValueError("SC activity does not match the compact arrays")
-    return indices
-
-
-def rehydrate_sc_quantity(ds: xr.Dataset, qty: str | xr.DataArray | np.ndarray) -> np.ndarray:
-    """Rehydrate row-major SC compact output."""
-    indices = _sc_indices(ds)
-    if isinstance(qty, str):
-        qty = ds[qty]
-    if isinstance(qty, xr.DataArray):
-        if not qty.dims or qty.dims[-1] != "ks":
-            raise ValueError("Requested SC quantity is not compact")
-        qty = qty.values
-    qty = np.asarray(qty)
-    if qty.ndim < 1 or qty.shape[-1] != len(indices):
-        raise ValueError("SC quantity's compact dimension does not match the activity")
-    shape = ds["active"].shape
-    result = np.zeros(qty.shape[:-1] + (int(np.prod(shape)),), dtype=qty.dtype)
-    result[..., indices] = qty
-    return result.reshape(qty.shape[:-1] + shape).squeeze()
-
-
-def sc_to_morton(ds: xr.Dataset, block_size: int = 16) -> xr.Dataset:
-    """Convert tile-equivalent SC compact fields to legacy 2D Morton storage.
-
-    Per-cell masks and partial outer tiles are rejected. The returned Dataset
-    owns its reordered arrays; the input is not changed.
-    """
-    from dexrt.sparse_data.morton import encode_morton_2
-
-    indices = _sc_indices(ds)
-    mask = np.asarray(ds["active"].values, dtype=bool)
-    nz, nx = mask.shape
-    if (
-        not isinstance(block_size, (int, np.integer))
-        or block_size < 1
-        or nx % block_size
-        or nz % block_size
-    ):
-        raise ValueError("Morton conversion requires complete outer tiles")
-    if max(nx // block_size, nz // block_size) > 65536:
-        raise ValueError("Tile coordinates exceed the legacy Morton encoding")
-    tiles = []
-    for z in range(0, nz, block_size):
-        for x in range(0, nx, block_size):
-            tile = mask[z : z + block_size, x : x + block_size]
-            if tile.any() != tile.all():
-                raise ValueError("Morton conversion requires tile-equivalent activity")
-            if tile.all():
-                tiles.append((int(encode_morton_2(x // block_size, z // block_size)), x, z))
-    tiles.sort()
-    inverse = np.full(nx * nz, -1, dtype=np.int64)
-    inverse[indices] = np.arange(len(indices))
-    order = []
-    for _, x, z in tiles:
-        for dz in range(block_size):
-            order.extend(inverse[(z + dz) * nx + x : (z + dz) * nx + x + block_size])
-    out = ds.copy(deep=True)
-    order = np.asarray(order, dtype=np.int64)
-    for name, var in ds.data_vars.items():
-        if var.dims and var.dims[-1] == "ks":
-            out[name] = (var.dims, np.asarray(var.values)[..., order], var.attrs)
-    out["morton_tiles"] = (
-        "num_active_tiles",
-        np.asarray([code for code, _, _ in tiles], dtype=np.uint32),
-    )
-    out.attrs.pop("sparse_layout", None)
-    out.attrs.update(
-        program="dexrt (2d)",
-        output_format="sparse",
-        block_size=block_size,
-        num_x_blocks=nx // block_size,
-        num_z_blocks=nz // block_size,
-    )
-    return out

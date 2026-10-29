@@ -17,6 +17,7 @@ class DexrtSystemConfig(BaseModel):
 
 
 class DexrtOutputConfig(BaseModel):
+    # Ignored by dexrt_sc (always dense).
     sparse: bool = False
     wavelength: bool = True
     J: bool = True
@@ -25,6 +26,7 @@ class DexrtOutputConfig(BaseModel):
     lte_pops: bool = True
     ne: bool = True
     nh_tot: bool = True
+    temperature: bool = True
     max_mip_level: bool = True
     psi_star: bool = False
     # dexrt_sc_3d: write the emergent intensity [wavelength, dir, y, x]
@@ -34,6 +36,9 @@ class DexrtOutputConfig(BaseModel):
     radiative_rates: bool = False
     collisional_rates: bool = False
     cont_energy_balance: bool = False
+    # dexrt_sc file I/O: Gather (streamed through rank 0), Parallel (netCDF-4
+    # collective) or Auto (Parallel when available).
+    io: Union[Literal["Auto"], Literal["Gather"], Literal["Parallel"]] = "Auto"
 
 
 class DexrtMipConfig(BaseModel):
@@ -69,6 +74,13 @@ class DexrtScConfig(BaseModel):
     prd_subiterations: int = 3
     prd_tolerance: float = 1e-3
     prd_start_iter: int = 0
+    # Scheduler overrides: cached base coefficient sets, receive/send ring rows
+    # per MPI stream, wavelengths per batch (0: chosen from memory), and J
+    # slots (batches accumulating at once; 0: ranks + receive_window).
+    base_slots: int = 2
+    receive_window: int = 4
+    wave_batch: int = 0
+    j_slots: int = 0
 
 
 class DexrtConfig(BaseModel):
@@ -76,7 +88,6 @@ class DexrtConfig(BaseModel):
     atmos_path: str = "dexrt_atmos.nc"
     output_path: str = "dexrt.nc"
     mode: Union[Literal["Lte"], Literal["NonLte"], Literal["GivenFs"]] = "NonLte"
-    store_J_on_cpu: bool = True
     output: DexrtOutputConfig = Field(default_factory=DexrtOutputConfig)
     max_cascade: int = 5
     mip_config: DexrtMipConfig = Field(default_factory=DexrtMipConfig)
@@ -90,8 +101,10 @@ class DexrtLteConfig(DexrtConfig):
     # Background opacity tables from dexrt.background_tables (empty for none).
     background_path: str = ""
     atoms: Dict[str, AtomicModelConfig]
-    boundary_type: Union[Literal["Zero"], Literal["Promweaver"]]
+    # Thermalised: dexrt_sc only.
+    boundary_type: Union[Literal["Zero"], Literal["Promweaver"], Literal["Thermalised"]]
     initial_pops_path: str = ""
+    total_abund: float = 1.0861550335264554
     rad_loss: Union[Literal["None"], Literal["PerWavelength"], Literal["Integrated"]] = "None"
 
 
@@ -107,6 +120,8 @@ class DexrtNonLteConfig(DexrtLteConfig):
     pop_tol: float = 1e-3
     conserve_charge: bool = False
     conserve_pressure: bool = False
+    # Mutually exclusive with conserve_pressure.
+    conserve_energy: bool = False
     snapshot_frequency: int = 10
     initial_lambda_iterations: int = 2
     final_dense_fs: bool = True
