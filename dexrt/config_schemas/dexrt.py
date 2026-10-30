@@ -125,6 +125,8 @@ class DexrtNonLteConfig(DexrtLteConfig):
     # Mutually exclusive with conserve_pressure.
     conserve_energy: bool = False
     snapshot_frequency: int = 10
+    # dexrt_sc: save background J at internal storage precision in snapshots.
+    snapshot_J: bool = True
     initial_lambda_iterations: int = 2
     final_dense_fs: bool = True
     ng_config: DexrtNgConfig = Field(default_factory=DexrtNgConfig)
