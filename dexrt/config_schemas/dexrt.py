@@ -74,6 +74,8 @@ class DexrtScConfig(BaseModel):
     prd_subiterations: int = 3
     prd_tolerance: float = 1e-3
     prd_start_iter: int = 0
+    # Per-rank scheduler diagnostics; GPU phase timings synchronize between phases.
+    scheduler_stats: bool = False
     # Scheduler overrides: cached base coefficient sets, receive/send ring rows
     # per MPI stream, wavelengths per batch (0: chosen from memory), and J
     # slots (batches accumulating at once; 0: ranks + receive_window).
